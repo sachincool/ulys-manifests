@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: worker, namespace: ulys, labels: { app: worker } }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: worker } }
+  template:
+    metadata: { labels: { app: worker } }
+    spec:
+      serviceAccountName: worker
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: worker
+          image: worker
+          ports: [{ containerPort: 8080, name: http }]
+          env:
+            - { name: PORT, value: "8080" }
+            - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "otel-collector.observability.svc.cluster.local:4317" }
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits:   { cpu: 250m, memory: 256Mi }
+          startupProbe:
+            httpGet: { path: /livez, port: http }
+            failureThreshold: 30
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /livez, port: http }
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /livez, port: http }
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: worker, namespace: ulys }
+spec:
+  minAvailable: 1
+  selector: { matchLabels: { app: worker } }

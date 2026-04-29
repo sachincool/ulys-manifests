@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ""
+resources:
+  - ../base
+patches:
+  # Inject the dev env's GSA emails into the placeholder ServiceAccounts.
+  # The values come from `pulumi stack output` of the dev stack.
+  - target: { kind: ServiceAccount, name: external-secrets, namespace: external-secrets }
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/iam.gke.io~1gcp-service-account
+        value: eso@ulys-dev-PROJECT_ID.iam.gserviceaccount.com
+  - target: { kind: ServiceAccount, name: otel-collector, namespace: observability }
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/iam.gke.io~1gcp-service-account
+        value: otel-collector@ulys-dev-PROJECT_ID.iam.gserviceaccount.com
+  - target: { kind: ClusterSecretStore, name: gcp-secret-manager }
+    patch: |-
+      - op: replace
+        path: /spec/provider/gcpsm/projectID
+        value: ulys-dev-PROJECT_ID
+      - op: replace
+        path: /spec/provider/gcpsm/auth/workloadIdentity/clusterLocation
+        value: us-central1-a

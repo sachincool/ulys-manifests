@@ -1,0 +1,44 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ulys
+resources:
+  - ../base/api
+  - ../base/worker
+patches:
+  # Wire the dev project ID + Cloud SQL instance into the api deployment.
+  - target: { kind: Deployment, name: api }
+    patch: |-
+      - op: replace
+        path: /spec/template/metadata/annotations/cloud.google.com~1sql-instance
+        value: ulys-dev-PROJECT_ID:us-central1:ulys-pg
+      - op: replace
+        path: /spec/template/spec/containers/0/env
+        value:
+          - { name: PORT,        value: "8080" }
+          - { name: DB_NAME,     value: app }
+          - { name: DB_USER,     value: app }
+          - { name: WORKER_URL,  value: "http://worker.ulys.svc.cluster.local" }
+          - { name: REDIS_ADDR,  value: "10.20.10.5:6379" }
+          - { name: CSQL_INSTANCE_CONNECTION_NAME, value: "ulys-dev-PROJECT_ID:us-central1:ulys-pg" }
+          - name: DB_PASSWORD
+            valueFrom: { secretKeyRef: { name: api-secrets, key: DB_PASSWORD } }
+          - name: REDIS_PASSWORD
+            valueFrom: { secretKeyRef: { name: api-secrets, key: REDIS_PASSWORD, optional: true } }
+          - { name: GIT_SHA,    value: "set-by-ci" }
+          - { name: BUILD_TIME, value: "set-by-ci" }
+          - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "otel-collector.observability.svc.cluster.local:4317" }
+  - target: { kind: ServiceAccount, name: api }
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/iam.gke.io~1gcp-service-account
+        value: api@ulys-dev-PROJECT_ID.iam.gserviceaccount.com
+  - target: { kind: ServiceAccount, name: worker }
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/iam.gke.io~1gcp-service-account
+        value: worker@ulys-dev-PROJECT_ID.iam.gserviceaccount.com
+images:
+  - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/api
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/worker
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000

@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ulys
+resources: [../base/api, ../base/worker]
+# Same shape, prod project. promote.yml copies signed digests from staging.
+# Replicas bumped, regional cluster annotations applied via patches.
+patches:
+  - target: { kind: Deployment, name: api }
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 4
+  - target: { kind: Deployment, name: worker }
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+images:
+  - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/api
+    newName: us-central1-docker.pkg.dev/ulys-prod-PROJECT_ID/ulys/api
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/worker
+    newName: us-central1-docker.pkg.dev/ulys-prod-PROJECT_ID/ulys/worker
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000

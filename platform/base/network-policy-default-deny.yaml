@@ -1,0 +1,30 @@
+# Default-deny ingress + egress in `ulys`. Every component opens its own
+# explicit allow rules in apps/.../networkpolicy.yaml. This is the line that
+# turns the cluster into a real-trust boundary.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: ulys
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+# kube-dns has to keep working though.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: ulys
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: kube-system }
+          podSelector:
+            matchLabels: { k8s-app: kube-dns }
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }

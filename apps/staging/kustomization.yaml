@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ulys
+resources: [../base/api, ../base/worker]
+# Patches mirror apps/dev/kustomization.yaml — same shape, different
+# project ID, hostname, and Cloud SQL connection string. CI's promote.yml
+# copies image digests in here from apps/dev/.
+images:
+  - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/api
+    newName: us-central1-docker.pkg.dev/ulys-staging-PROJECT_ID/ulys/api
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/worker
+    newName: us-central1-docker.pkg.dev/ulys-staging-PROJECT_ID/ulys/worker
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000

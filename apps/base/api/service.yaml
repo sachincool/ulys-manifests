@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: ulys
+  labels: { app: api }
+spec:
+  type: ClusterIP
+  selector: { app: api }
+  ports:
+    - { name: http, port: 80, targetPort: http, protocol: TCP }
+---
+# External exposure: BackendConfig + GCE Ingress (or use a Gateway API
+# implementation). For dev, a single GKE-managed external HTTPS LB is fine;
+# prod adds Cloud Armor + IAP.
+apiVersion: networking.gke.io/v1
+kind: BackendConfig
+metadata: { name: api, namespace: ulys }
+spec:
+  timeoutSec: 30
+  healthCheck:
+    type: HTTP
+    requestPath: /livez
+    port: 8080
+  logging: { enable: true, sampleRate: 1.0 }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api
+  namespace: ulys
+  annotations:
+    kubernetes.io/ingress.class: gce
+    networking.gke.io/managed-certificates: api-cert
+    kubernetes.io/ingress.global-static-ip-name: ulys-api
+    cloud.google.com/backend-config: '{"default":"api"}'
+spec:
+  rules:
+    - host: api.PLACEHOLDER.example.com  # patched per env
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: api, port: { number: 80 } } }

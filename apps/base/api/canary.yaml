@@ -1,0 +1,48 @@
+# Flagger Canary CR — replaces every line of canary logic from the
+# take-home's deploy.yml.
+#
+# Lifecycle:
+#   1. CI bumps `images.digest` in kustomization.yaml.
+#   2. Argo CD reconciles → Flagger detects new digest in `targetRef`.
+#   3. Flagger creates the canary ReplicaSet, runs analysis steps:
+#      - 10% → query Prometheus for canary's request-success-rate +
+#        request-duration-p99 over the last minute.
+#      - If both within thresholds, advance to 25% / 50% / 75% / 100%.
+#      - At any step, threshold breach => `revertOnDeletion: true` +
+#        roll back to the stable revision and abort.
+#   4. On success, Flagger swaps the stable Deployment selector to the
+#      new ReplicaSet. The canary ReplicaSet becomes the new stable.
+apiVersion: flagger.app/v1beta1
+kind: Canary
+metadata:
+  name: api
+  namespace: ulys
+spec:
+  provider: linkerd
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api
+  service:
+    port: 80
+    targetPort: http
+  analysis:
+    interval: 30s
+    threshold: 5            # consecutive metric-failures before abort
+    maxWeight: 50           # max canary traffic %
+    stepWeight: 10
+    metrics:
+      - name: request-success-rate
+        thresholdRange: { min: 99 }
+        interval: 1m
+      - name: request-duration
+        thresholdRange: { max: 500 }   # p99 ms
+        interval: 1m
+    webhooks:
+      - name: smoke
+        type: pre-rollout
+        url: http://flagger-loadtester.flagger-system/
+        timeout: 30s
+        metadata:
+          type: bash
+          cmd: "curl -sf http://api-canary.ulys/livez && curl -sf http://api-canary.ulys/version"

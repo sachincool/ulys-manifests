@@ -1,0 +1,25 @@
+# App-of-Apps root.
+#
+# `argocd login` once, then:
+#   kubectl apply -n argocd -f argocd-applications/root.yaml
+# Argo CD then reconciles every Application CR under argocd-applications/
+# automatically — no further kubectl apply by hand.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/sachincool/ulys-manifests
+    targetRevision: HEAD
+    path: argocd-applications
+    directory: { recurse: true }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true]

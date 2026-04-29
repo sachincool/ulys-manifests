@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Platform components installed in every cluster, in this order:
+#   1. linkerd       — service mesh, mTLS, traffic split
+#   2. external-secrets — Secret Manager → K8s Secret bridge
+#   3. flagger       — progressive delivery driver
+#   4. otel-collector — OTLP receiver + Cloud Trace exporter
+#
+# Each is installed via Helm-rendered manifests committed here so the
+# manifest repo is the single source of truth.
+resources:
+  - namespace-ulys.yaml
+  - namespace-observability.yaml
+  - namespace-external-secrets.yaml
+  - linkerd.yaml
+  - flagger.yaml
+  - external-secrets-operator.yaml
+  - otel-collector.yaml
+  - network-policy-default-deny.yaml
