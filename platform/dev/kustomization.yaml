@@ -10,17 +10,17 @@ patches:
     patch: |-
       - op: replace
         path: /metadata/annotations/iam.gke.io~1gcp-service-account
-        value: eso@ulys-dev-PROJECT_ID.iam.gserviceaccount.com
+        value: ulys-eso@ulys-dev-34490.iam.gserviceaccount.com
   - target: { kind: ServiceAccount, name: otel-collector, namespace: observability }
     patch: |-
       - op: replace
         path: /metadata/annotations/iam.gke.io~1gcp-service-account
-        value: otel-collector@ulys-dev-PROJECT_ID.iam.gserviceaccount.com
+        value: ulys-eso@ulys-dev-34490.iam.gserviceaccount.com
   - target: { kind: ClusterSecretStore, name: gcp-secret-manager }
     patch: |-
       - op: replace
         path: /spec/provider/gcpsm/projectID
-        value: ulys-dev-PROJECT_ID
+        value: ulys-dev-34490
       - op: replace
         path: /spec/provider/gcpsm/auth/workloadIdentity/clusterLocation
         value: us-central1-a

@@ -10,7 +10,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/template/metadata/annotations/cloud.google.com~1sql-instance
-        value: ulys-dev-PROJECT_ID:us-central1:ulys-pg
+        value: ulys-dev-34490:us-central1:ulys-pg
       - op: replace
         path: /spec/template/spec/containers/0/env
         value:
@@ -19,7 +19,7 @@ patches:
           - { name: DB_USER,     value: app }
           - { name: WORKER_URL,  value: "http://worker.ulys.svc.cluster.local" }
           - { name: REDIS_ADDR,  value: "10.20.10.5:6379" }
-          - { name: CSQL_INSTANCE_CONNECTION_NAME, value: "ulys-dev-PROJECT_ID:us-central1:ulys-pg" }
+          - { name: CSQL_INSTANCE_CONNECTION_NAME, value: "ulys-dev-34490:us-central1:ulys-pg" }
           - name: DB_PASSWORD
             valueFrom: { secretKeyRef: { name: api-secrets, key: DB_PASSWORD } }
           - name: REDIS_PASSWORD
@@ -31,14 +31,14 @@ patches:
     patch: |-
       - op: replace
         path: /metadata/annotations/iam.gke.io~1gcp-service-account
-        value: api@ulys-dev-PROJECT_ID.iam.gserviceaccount.com
+        value: ulys-api@ulys-dev-34490.iam.gserviceaccount.com
   - target: { kind: ServiceAccount, name: worker }
     patch: |-
       - op: replace
         path: /metadata/annotations/iam.gke.io~1gcp-service-account
-        value: worker@ulys-dev-PROJECT_ID.iam.gserviceaccount.com
+        value: ulys-worker@ulys-dev-34490.iam.gserviceaccount.com
 images:
-  - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/api
+  - name: us-central1-docker.pkg.dev/ulys-dev-34490/ulys/api
     digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
-  - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/worker
+  - name: us-central1-docker.pkg.dev/ulys-dev-34490/ulys/worker
     digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
