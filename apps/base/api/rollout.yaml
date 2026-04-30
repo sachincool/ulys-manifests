@@ -100,9 +100,18 @@ spec:
             template:
               spec:
                 restartPolicy: Never
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 65532
+                  runAsGroup: 65532
+                  seccompProfile: { type: RuntimeDefault }
                 containers:
                   - name: smoke
                     image: curlimages/curl:8.10.1
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: { drop: [ALL] }
                     command: [sh, -c]
                     args:
                       - |
