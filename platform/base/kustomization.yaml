@@ -1,19 +1,21 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # Platform components installed in every cluster, in this order:
-#   1. linkerd       — service mesh, mTLS, traffic split
-#   2. external-secrets — Secret Manager → K8s Secret bridge
-#   3. flagger       — progressive delivery driver
-#   4. otel-collector — OTLP receiver + Cloud Trace exporter
+#   1. namespaces (with PSA labels)
+#   2. argo-cd               — GitOps (this file is reconciled BY argo-cd; bootstrap once)
+#   3. argo-rollouts         — progressive delivery (Rollout CRD + analysis runs)
+#   4. external-secrets      — Secret Manager → K8s Secret bridge
+#   5. default-deny NetworkPolicy
 #
-# Each is installed via Helm-rendered manifests committed here so the
-# manifest repo is the single source of truth.
+# The big -rendered.yaml files are committed Helm output. Regenerate via
+# the platform/Makefile.
 resources:
   - namespace-ulys.yaml
   - namespace-observability.yaml
   - namespace-external-secrets.yaml
-  - linkerd.yaml
-  - flagger.yaml
-  - external-secrets-operator.yaml
-  - otel-collector.yaml
+  - namespace-argocd.yaml
+  - namespace-argo-rollouts.yaml
+  - argo-cd-rendered.yaml
+  - argo-rollouts-rendered.yaml
+  - external-secrets-rendered.yaml
   - network-policy-default-deny.yaml

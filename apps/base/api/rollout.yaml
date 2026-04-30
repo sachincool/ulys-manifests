@@ -1,0 +1,142 @@
+# Argo Rollouts replaces the standard Deployment with a Rollout resource that
+# supports canary, blue/green, and analysis-driven progressive delivery.
+#
+# Strategy: canary at 10% → smoke (Job-based AnalysisTemplate) → 50% → smoke
+# → 100%. Smoke checks /livez, /readyz, /version, /work on the canary
+# service. /readyz failure (which the forcing-function commit triggers)
+# fails the AnalysisRun and Argo Rollouts auto-aborts: traffic returns to
+# the stable revision and the canary ReplicaSet scales to zero.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: api
+  namespace: ulys
+  labels: { app: api }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: api } }
+  strategy:
+    canary:
+      canaryService: api-canary
+      stableService: api
+      steps:
+        - setWeight: 10
+        - pause: { duration: 20s }
+        - analysis:
+            templates:
+              - templateName: smoke
+            args:
+              - { name: target, value: "http://api-canary.ulys.svc.cluster.local" }
+        - setWeight: 50
+        - pause: { duration: 20s }
+        - analysis:
+            templates:
+              - templateName: smoke
+            args:
+              - { name: target, value: "http://api-canary.ulys.svc.cluster.local" }
+        - setWeight: 100
+  template:
+    metadata:
+      labels: { app: api }
+      annotations:
+        cloud.google.com/sql-instance: PROJECT_ID:us-central1:ulys-pg
+    spec:
+      serviceAccountName: api
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: api
+          image: api  # set by kustomize images.digest
+          ports: [{ containerPort: 8080, name: http }]
+          env:
+            - { name: PORT,        value: "8080" }
+            - { name: DB_NAME,     value: app }
+            - { name: DB_USER,     value: app }
+            - { name: WORKER_URL,  value: "http://worker.ulys.svc.cluster.local" }
+            - { name: REDIS_ADDR,  value: "PLACEHOLDER:6379" }
+            - { name: CSQL_INSTANCE_CONNECTION_NAME, value: "PROJECT_ID:us-central1:ulys-pg" }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: api-secrets, key: DB_PASSWORD } }
+            - name: REDIS_PASSWORD
+              valueFrom: { secretKeyRef: { name: api-secrets, key: REDIS_PASSWORD, optional: true } }
+            - { name: GIT_SHA, value: "set-by-ci" }
+            - { name: BUILD_TIME, value: "set-by-ci" }
+            - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "otel-collector.observability.svc.cluster.local:4317" }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+          startupProbe:
+            httpGet: { path: /livez, port: http }
+            failureThreshold: 30
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /livez, port: http }
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata: { name: smoke, namespace: ulys }
+spec:
+  args:
+    - name: target
+  metrics:
+    - name: smoke
+      provider:
+        job:
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: smoke
+                    image: curlimages/curl:8.10.1
+                    command: [sh, -c]
+                    args:
+                      - |
+                        set -e
+                        TARGET="{{args.target}}"
+                        echo "smoking $TARGET"
+                        curl --fail --silent --show-error --retry 30 --retry-delay 3 \
+                             --retry-all-errors --max-time 90 -o /dev/null "$TARGET/livez"
+                        echo "  /livez ok"
+                        code=$(curl -sk -o /tmp/r -w '%{http_code}' "$TARGET/readyz")
+                        [ "$code" = "200" ] || { echo "FAIL /readyz=$code: $(cat /tmp/r)"; exit 1; }
+                        echo "  /readyz ok"
+                        curl --fail -sk "$TARGET/version" | grep -q sha
+                        echo "  /version ok"
+                        body=$(curl --fail -sk "$TARGET/work")
+                        echo "$body" | grep -q '"worker"' || { echo "FAIL /work missing worker: $body"; exit 1; }
+                        echo "  /work ok"
+                        echo "smoke OK"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: api, namespace: ulys }
+spec:
+  scaleTargetRef:
+    # HPA points at the Rollout, not the Deployment.
+    apiVersion: argoproj.io/v1alpha1
+    kind: Rollout
+    name: api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: api, namespace: ulys }
+spec:
+  minAvailable: 1
+  selector: { matchLabels: { app: api } }

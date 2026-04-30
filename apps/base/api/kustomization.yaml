@@ -4,9 +4,8 @@ namespace: ulys
 resources:
   - serviceaccount.yaml
   - externalsecret.yaml
-  - deployment.yaml
+  - rollout.yaml
   - service.yaml
-  - canary.yaml
   - networkpolicy.yaml
 images:
   - name: api

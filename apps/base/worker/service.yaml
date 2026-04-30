@@ -1,6 +1,16 @@
+# Two Services for Argo Rollouts blueGreen: active + preview.
 apiVersion: v1
 kind: Service
 metadata: { name: worker, namespace: ulys, labels: { app: worker } }
+spec:
+  type: ClusterIP
+  selector: { app: worker }
+  ports:
+    - { name: http, port: 80, targetPort: http, protocol: TCP }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: worker-preview, namespace: ulys, labels: { app: worker } }
 spec:
   type: ClusterIP
   selector: { app: worker }

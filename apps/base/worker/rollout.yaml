@@ -1,9 +1,21 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata: { name: worker, namespace: ulys, labels: { app: worker } }
+# Worker is internal-only. No live-traffic canary needed; a simpler
+# blue/green pattern is sufficient. Argo Rollouts swaps active and preview
+# Services after a manual or automatic promotion gate.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: worker
+  namespace: ulys
+  labels: { app: worker }
 spec:
   replicas: 2
   selector: { matchLabels: { app: worker } }
+  strategy:
+    blueGreen:
+      activeService:  worker
+      previewService: worker-preview
+      autoPromotionEnabled: true
+      scaleDownDelaySeconds: 30
   template:
     metadata: { labels: { app: worker } }
     spec:
@@ -21,16 +33,9 @@ spec:
           resources:
             requests: { cpu: 50m, memory: 64Mi }
             limits:   { cpu: 250m, memory: 256Mi }
-          startupProbe:
-            httpGet: { path: /livez, port: http }
-            failureThreshold: 30
-            periodSeconds: 5
-          livenessProbe:
-            httpGet: { path: /livez, port: http }
-            periodSeconds: 10
-          readinessProbe:
-            httpGet: { path: /livez, port: http }
-            periodSeconds: 5
+          startupProbe:  { httpGet: { path: /livez, port: http }, failureThreshold: 30, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /livez, port: http }, periodSeconds: 10 }
+          readinessProbe:{ httpGet: { path: /livez, port: http }, periodSeconds: 5 }
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

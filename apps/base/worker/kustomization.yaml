@@ -3,11 +3,9 @@ kind: Kustomization
 namespace: ulys
 resources:
   - serviceaccount.yaml
-  - deployment.yaml
+  - rollout.yaml
   - service.yaml
-  - canary.yaml
   - networkpolicy.yaml
-  - authorization.yaml
 images:
   - name: worker
     newName: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/worker

@@ -1,9 +1,19 @@
+# Argo Rollouts canary strategy needs two Services:
+#   - api         (stable) → selector points at the stable ReplicaSet
+#   - api-canary  (canary) → selector points at the canary ReplicaSet
+# Argo Rollouts mutates the selectors as the rollout progresses.
 apiVersion: v1
 kind: Service
-metadata:
-  name: api
-  namespace: ulys
-  labels: { app: api }
+metadata: { name: api, namespace: ulys, labels: { app: api } }
+spec:
+  type: ClusterIP
+  selector: { app: api }
+  ports:
+    - { name: http, port: 80, targetPort: http, protocol: TCP }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: api-canary, namespace: ulys, labels: { app: api } }
 spec:
   type: ClusterIP
   selector: { app: api }
