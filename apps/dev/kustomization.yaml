@@ -43,4 +43,4 @@ images:
     digest: sha256:31846808f621ba21853dee85b74c9db848a370fb16a016cdea55a428e9ef7c06
   - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/worker
     newName: us-central1-docker.pkg.dev/ulys-dev-34490/ulys/worker
-    digest: sha256:60be74b404ac7cb82165e6687b128a3ac699e0e0d2ce43987b8dac0c38e9d5d3
+    digest: sha256:648eaeb3f098008aa43538ee1fcbf8609e9a8e4c01d67def57b4ec4b0089d012
