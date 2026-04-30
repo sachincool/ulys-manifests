@@ -38,7 +38,7 @@ patches:
 images:
   - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/api
     newName: us-central1-docker.pkg.dev/ulys-dev-34490/ulys/api
-    digest: sha256:7e004f71357722783b1ccfbf6a66fc9c9c8005b1d7a83bbcb52ef4993bf47379
+    digest: sha256:d08e1e76d4cfeee4420881ecfbcab3599c4376e5d4b635e853d27da2ee92a235
   - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/worker
     newName: us-central1-docker.pkg.dev/ulys-dev-34490/ulys/worker
     digest: sha256:648eaeb3f098008aa43538ee1fcbf8609e9a8e4c01d67def57b4ec4b0089d012
