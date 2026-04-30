@@ -8,23 +8,21 @@ patches:
   # Wire the dev project ID + actual Redis IP into the api Rollout.
   - target: { kind: Rollout, name: api }
     patch: |-
-      - op: replace
-        path: /spec/template/metadata/annotations/cloud.google.com~1sql-instance
-        value: ulys-dev-34490:us-central1:ulys-pg
+      - op: remove
+        path: /spec/template/metadata/annotations
       - op: replace
         path: /spec/template/spec/containers/0/env
         value:
-          - { name: PORT,        value: "8080" }
-          - { name: DB_NAME,     value: app }
-          - { name: DB_USER,     value: app }
-          - { name: WORKER_URL,  value: "http://worker.ulys.svc.cluster.local" }
-          - { name: REDIS_ADDR,  value: "10.99.0.3:6379" }
-          - { name: CSQL_INSTANCE_CONNECTION_NAME, value: "ulys-dev-34490:us-central1:ulys-pg" }
+          - { name: PORT,       value: "8080" }
+          - { name: DB_HOST,    value: "10.99.1.3" }
+          - { name: DB_NAME,    value: app }
+          - { name: DB_USER,    value: app }
+          - { name: REDIS_ADDR, value: "10.99.0.3:6379" }
+          - { name: WORKER_URL, value: "http://worker.ulys.svc.cluster.local" }
           - name: DB_PASSWORD
             valueFrom: { secretKeyRef: { name: api-secrets, key: DB_PASSWORD } }
           - { name: GIT_SHA,    value: "set-by-ci" }
           - { name: BUILD_TIME, value: "set-by-ci" }
-          - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "otel-collector.observability.svc.cluster.local:4317" }
   - target: { kind: ServiceAccount, name: api }
     patch: |-
       - op: replace
