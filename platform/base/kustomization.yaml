@@ -1,14 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# Platform components installed in every cluster, in this order:
-#   1. namespaces (with PSA labels)
-#   2. argo-cd               — GitOps (this file is reconciled BY argo-cd; bootstrap once)
-#   3. argo-rollouts         — progressive delivery (Rollout CRD + analysis runs)
-#   4. external-secrets      — Secret Manager → K8s Secret bridge
-#   5. default-deny NetworkPolicy
+# Platform components installed in every cluster. Per-env overlays patch the
+# placeholder GSA emails + project IDs.
 #
-# The big -rendered.yaml files are committed Helm output. Regenerate via
-# the platform/Makefile.
+# Order matters: namespaces first; CRDs (in *-rendered.yaml) before resources
+# that use them; default-deny NetworkPolicy last.
 resources:
   - namespace-ulys.yaml
   - namespace-observability.yaml
@@ -18,4 +14,5 @@ resources:
   - argo-cd-rendered.yaml
   - argo-rollouts-rendered.yaml
   - external-secrets-rendered.yaml
+  - external-secrets-operator.yaml
   - network-policy-default-deny.yaml

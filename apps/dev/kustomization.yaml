@@ -5,8 +5,8 @@ resources:
   - ../base/api
   - ../base/worker
 patches:
-  # Wire the dev project ID + Cloud SQL instance into the api deployment.
-  - target: { kind: Deployment, name: api }
+  # Wire the dev project ID + actual Redis IP into the api Rollout.
+  - target: { kind: Rollout, name: api }
     patch: |-
       - op: replace
         path: /spec/template/metadata/annotations/cloud.google.com~1sql-instance
@@ -18,12 +18,10 @@ patches:
           - { name: DB_NAME,     value: app }
           - { name: DB_USER,     value: app }
           - { name: WORKER_URL,  value: "http://worker.ulys.svc.cluster.local" }
-          - { name: REDIS_ADDR,  value: "10.20.10.5:6379" }
+          - { name: REDIS_ADDR,  value: "10.99.0.3:6379" }
           - { name: CSQL_INSTANCE_CONNECTION_NAME, value: "ulys-dev-34490:us-central1:ulys-pg" }
           - name: DB_PASSWORD
             valueFrom: { secretKeyRef: { name: api-secrets, key: DB_PASSWORD } }
-          - name: REDIS_PASSWORD
-            valueFrom: { secretKeyRef: { name: api-secrets, key: REDIS_PASSWORD, optional: true } }
           - { name: GIT_SHA,    value: "set-by-ci" }
           - { name: BUILD_TIME, value: "set-by-ci" }
           - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "otel-collector.observability.svc.cluster.local:4317" }
