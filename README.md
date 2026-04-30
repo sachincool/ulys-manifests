@@ -1,6 +1,6 @@
 # ulys-manifests
 
-GitOps source of truth for the [ulys](https://github.com/sachincool/ulys-prod)
+GitOps source of truth for the [ulys](https://github.com/sachincool/ulys-assignment)
 product. Argo CD reconciles cluster state from `main` of this repo;
 nothing in here is applied by hand.
 
