@@ -3,13 +3,14 @@ kind: Kustomization
 resources:
   - ../base
 patches:
-  # Wire the dev project's GSA email into the External Secrets Operator KSA.
-  # ESO impersonates this GSA via Workload Identity to pull from Secret Manager.
+  # ESO ServiceAccount → impersonates ulys-eso GSA via Workload Identity
   - target: { kind: ServiceAccount, name: external-secrets, namespace: external-secrets }
     patch: |-
       - op: replace
         path: /metadata/annotations/iam.gke.io~1gcp-service-account
         value: ulys-eso@ulys-dev-34490.iam.gserviceaccount.com
+  # ClusterSecretStore → wire to dev project + actual cluster name (Pulumi
+  # appends a random suffix; the bootstrap script pipes that here at apply time)
   - target: { kind: ClusterSecretStore, name: gcp-secret-manager }
     patch: |-
       - op: replace
@@ -18,3 +19,6 @@ patches:
       - op: replace
         path: /spec/provider/gcpsm/auth/workloadIdentity/clusterLocation
         value: us-central1-a
+      - op: replace
+        path: /spec/provider/gcpsm/auth/workloadIdentity/clusterName
+        value: ulys-gke-6d68d42
