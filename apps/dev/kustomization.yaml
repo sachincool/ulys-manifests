@@ -35,8 +35,12 @@ patches:
       - op: replace
         path: /metadata/annotations/iam.gke.io~1gcp-service-account
         value: ulys-worker@ulys-dev-34490.iam.gserviceaccount.com
+# The base sets newName to ulys-dev-PROJECT_ID literal; the env overlay
+# rewrites to the actual project + sets the digest.
 images:
-  - name: us-central1-docker.pkg.dev/ulys-dev-34490/ulys/api
+  - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/api
+    newName: us-central1-docker.pkg.dev/ulys-dev-34490/ulys/api
     digest: sha256:31846808f621ba21853dee85b74c9db848a370fb16a016cdea55a428e9ef7c06
-  - name: us-central1-docker.pkg.dev/ulys-dev-34490/ulys/worker
+  - name: us-central1-docker.pkg.dev/ulys-dev-PROJECT_ID/ulys/worker
+    newName: us-central1-docker.pkg.dev/ulys-dev-34490/ulys/worker
     digest: sha256:60be74b404ac7cb82165e6687b128a3ac699e0e0d2ce43987b8dac0c38e9d5d3
